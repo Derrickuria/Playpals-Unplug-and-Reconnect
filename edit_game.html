@@ -12,21 +12,19 @@
             <label>Description</label>
             <textarea name="description" required>{{ game.description }}</textarea>
 
-            <label>Price</label>
+            <label>Price per Day (Ksh)</label>
             <input type="number" name="price" value="{{ game.price }}" required>
+
+            <label>Quantity in Stock</label>
+            <input type="number" name="quantity" value="{{ game.quantity }}" min="1" required>
 
             <label>Image Filename</label>
             <input type="text" name="image" value="{{ game.image }}" required>
 
-            <label>
-                <input type="checkbox" name="available" {% if game.available %}checked{% endif %}>
-                Available
-            </label>
-
             <button type="submit">Update Game</button>
         </form>
 
-        <a href="{{ url_for('admin_dashboard') }}">← Back</a>
+        <a href="{{ url_for('admin_inventory') }}" style="display:inline-block; margin-top:16px;">← Back to Inventory</a>
     </div>
 </section>
 

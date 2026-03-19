@@ -1,11 +1,312 @@
 {% extends "base.html" %}
 
 {% block content %}
+
+<!-- ANIMATED BACKGROUND GRID -->
+<div class="hero-bg-grid"></div>
+
+<!-- FLOATING GAME EMOJIS -->
+<div class="floaters" aria-hidden="true">
+    <span>🎲</span><span>🃏</span><span>♟️</span><span>🎯</span>
+    <span>🧩</span><span>🎮</span><span>🎰</span><span>🃏</span>
+    <span>🎲</span><span>♟️</span><span>🧩</span><span>🎯</span>
+</div>
+
+<!-- HERO -->
 <section class="hero">
+    <div class="hero-tag">🎲#1 Board Game Rental</div>
     <h1>Unplug and Reconnect.</h1>
-    <p>Turn up the fun, Build real memories.</p>
+    <p>Turn up the fun, build real memories — delivered right to your door.</p>
     <a href="{{ url_for('catalogue') }}">
-        <button>Browse Games</button>
+        <button class="hero-cta">Browse Games <span>→</span></button>
     </a>
 </section>
+
+<!-- ACCORDIONS -->
+<section class="accordions-section">
+
+    <!-- HOW IT WORKS -->
+    <div class="accordion">
+        <button class="accordion-header" onclick="toggleAccordion(this)">
+            <span>🕹️ How It Works</span>
+            <span class="accordion-arrow">▼</span>
+        </button>
+        <div class="accordion-body">
+            <div class="steps-grid">
+                <div class="step-card">
+                    <div class="step-icon">🎲</div>
+                    <h3>Pick Your Games</h3>
+                    <p>Browse our catalogue and add your favourite games to your cart.</p>
+                </div>
+                <div class="step-card">
+                    <div class="step-icon">📍</div>
+                    <h3>Choose Delivery</h3>
+                    <p>Drop a pin on the map and pick your rental dates.</p>
+                </div>
+                <div class="step-card">
+                    <div class="step-icon">💚</div>
+                    <h3>Pay via M-Pesa</h3>
+                    <p>Pay a 50% deposit via M-Pesa STK Push — fast and secure.</p>
+                </div>
+                <div class="step-card">
+                    <div class="step-icon">🚚</div>
+                    <h3>We Deliver</h3>
+                    <p>Games arrive at your location. Return them when you're done.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- WHY PLAYPALS -->
+    <div class="accordion">
+        <button class="accordion-header" onclick="toggleAccordion(this)">
+            <span>✨ Why PlayPals?</span>
+            <span class="accordion-arrow">▼</span>
+        </button>
+        <div class="accordion-body">
+            <div class="why-grid">
+                <div class="why-card">
+                    <span>🏠</span>
+                    <p>Delivered to you. No need to visit stores</p>
+                </div>
+                <div class="why-card">
+                    <span>💰</span>
+                    <p>Rent for a fraction of the price of buying</p>
+                </div>
+                <div class="why-card">
+                    <span>🎉</span>
+                    <p>Perfect for parties, family nights and team events</p>
+                </div>
+                <div class="why-card">
+                    <span>📱</span>
+                    <p>Easy secure payments</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</section>
+
+<script>
+function toggleAccordion(btn) {
+    const body = btn.nextElementSibling;
+    const arrow = btn.querySelector('.accordion-arrow');
+    const isOpen = body.style.maxHeight && body.style.maxHeight !== '0px';
+
+    if (isOpen) {
+        body.style.maxHeight = '0px';
+        body.style.opacity = '0';
+        arrow.style.transform = 'rotate(0deg)';
+    } else {
+        body.style.maxHeight = body.scrollHeight + 'px';
+        body.style.opacity = '1';
+        arrow.style.transform = 'rotate(180deg)';
+    }
+}
+</script>
+
+<style>
+/* ANIMATED BACKGROUND GRID */
+.hero-bg-grid {
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    background-image:
+        linear-gradient(rgba(245,197,66,0.04) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(245,197,66,0.04) 1px, transparent 1px);
+    background-size: 60px 60px;
+    animation: gridMove 20s linear infinite;
+}
+
+@keyframes gridMove {
+    0%   { background-position: 0 0; }
+    100% { background-position: 60px 60px; }
+}
+
+/* FLOATING EMOJIS */
+.floaters {
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    overflow: hidden;
+}
+
+.floaters span {
+    position: absolute;
+    font-size: 1.6rem;
+    opacity: 0.07;
+    animation: floatUp linear infinite;
+}
+
+.floaters span:nth-child(1)  { left: 5%;  animation-duration: 14s; animation-delay: 0s; }
+.floaters span:nth-child(2)  { left: 12%; animation-duration: 18s; animation-delay: 2s; }
+.floaters span:nth-child(3)  { left: 22%; animation-duration: 12s; animation-delay: 1s;   font-size: 2rem; }
+.floaters span:nth-child(4)  { left: 35%; animation-duration: 20s; animation-delay: 4s; }
+.floaters span:nth-child(5)  { left: 48%; animation-duration: 16s; animation-delay: 0.5s; font-size: 1.2rem; }
+.floaters span:nth-child(6)  { left: 58%; animation-duration: 13s; animation-delay: 3s; }
+.floaters span:nth-child(7)  { left: 68%; animation-duration: 19s; animation-delay: 1.5s; font-size: 2rem; }
+.floaters span:nth-child(8)  { left: 76%; animation-duration: 15s; animation-delay: 2.5s; }
+.floaters span:nth-child(9)  { left: 84%; animation-duration: 11s; animation-delay: 0s;   font-size: 1.8rem; }
+.floaters span:nth-child(10) { left: 90%; animation-duration: 17s; animation-delay: 3.5s; }
+.floaters span:nth-child(11) { left: 95%; animation-duration: 14s; animation-delay: 1s; }
+.floaters span:nth-child(12) { left: 30%; animation-duration: 21s; animation-delay: 5s;   font-size: 1.3rem; }
+
+@keyframes floatUp {
+    0%   { transform: translateY(110vh) rotate(0deg);   opacity: 0; }
+    10%  { opacity: 0.07; }
+    90%  { opacity: 0.07; }
+    100% { transform: translateY(-10vh) rotate(360deg); opacity: 0; }
+}
+
+/* HERO TAG */
+.hero-tag {
+    display: inline-block;
+    background: rgba(245,197,66,0.12);
+    border: 1px solid rgba(245,197,66,0.3);
+    color: var(--accent);
+    font-size: 0.85rem;
+    font-weight: 600;
+    padding: 6px 18px;
+    border-radius: 50px;
+    margin-bottom: 24px;
+    letter-spacing: 0.5px;
+}
+
+.hero-cta span {
+    display: inline-block;
+    transition: transform 0.3s;
+}
+.hero-cta:hover span {
+    transform: translateX(5px);
+}
+
+/* ACCORDIONS */
+.accordions-section {
+    padding: 20px 8% 80px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.accordion {
+    border: 1px solid rgba(245,197,66,0.15);
+    border-radius: 14px;
+    overflow: hidden;
+    background: var(--bg-card);
+}
+
+.accordion-header {
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px 28px;
+    background: transparent;
+    border: none;
+    color: white;
+    font-size: 1.05rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background 0.3s;
+    text-align: left;
+}
+
+.accordion-header:hover {
+    background: rgba(245,197,66,0.06);
+}
+
+.accordion-arrow {
+    font-size: 0.85rem;
+    color: var(--accent);
+    transition: transform 0.3s ease;
+}
+
+.accordion-body {
+    max-height: 0px;
+    opacity: 0;
+    overflow: hidden;
+    transition: max-height 0.4s ease, opacity 0.3s ease;
+    padding: 0 28px;
+}
+
+/* give it padding when open via JS — add bottom padding always */
+.accordion-body > * {
+    padding-bottom: 28px;
+}
+
+/* STEPS GRID */
+.steps-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 20px;
+    padding-top: 8px;
+}
+
+.step-card {
+    background: rgba(245,197,66,0.04);
+    border: 1px solid rgba(245,197,66,0.1);
+    border-radius: 14px;
+    padding: 24px 18px;
+    text-align: center;
+    transition: transform 0.3s, border-color 0.3s;
+}
+
+.step-card:hover {
+    transform: translateY(-4px);
+    border-color: rgba(245,197,66,0.35);
+}
+
+.step-icon {
+    font-size: 2.2rem;
+    margin-bottom: 14px;
+}
+
+.step-card h3 {
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--accent);
+    margin-bottom: 8px;
+}
+
+.step-card p {
+    font-size: 0.88rem;
+    color: var(--text-muted);
+    line-height: 1.6;
+}
+
+/* WHY GRID */
+.why-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 16px;
+    padding-top: 8px;
+}
+
+.why-card {
+    background: rgba(245,197,66,0.04);
+    border: 1px solid rgba(245,197,66,0.1);
+    border-radius: 14px;
+    padding: 24px 18px;
+    text-align: center;
+    transition: transform 0.3s;
+}
+
+.why-card:hover {
+    transform: translateY(-4px);
+}
+
+.why-card span {
+    font-size: 2rem;
+    display: block;
+    margin-bottom: 10px;
+}
+
+.why-card p {
+    font-size: 0.88rem;
+    color: var(--text-muted);
+    line-height: 1.6;
+}
+</style>
+
 {% endblock %}

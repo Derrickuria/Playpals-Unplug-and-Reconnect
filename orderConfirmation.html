@@ -8,11 +8,19 @@
 
         <div class="order-details">
             <h3>Order Summary</h3>
-            <ul id="order-items"></ul>
-            <p class="total" id="order-total">Total: Ksh 0</p>
+            <ul>
+                {% for item in items %}
+                    <li>{{ item.name }} — Ksh {{ item.price }}</li>
+                {% endfor %}
+            </ul>
+            <p class="total">Total: Ksh {{ order.total_price }}</p>
+            <p>Deposit Paid: Ksh {{ order.deposit_paid }}</p>
+            <p>Balance Due on Return: Ksh {{ order.balance_due }}</p>
 
             <h3>Delivery Details</h3>
-            <p id="delivery-info"></p>
+            <p><strong>Name:</strong> {{ order.customer_name }}</p>
+            <p><strong>Phone:</strong> {{ order.phone }}</p>
+            <p><strong>Location:</strong> {{ order.location }}</p>
         </div>
 
         <div class="confirmation-actions">
@@ -20,39 +28,4 @@
         </div>
     </div>
 </section>
-
-<script>
-function loadConfirmation() {
-    const order = JSON.parse(localStorage.getItem("lastOrder"));
-    if (!order) return;
-
-    const itemsList = document.getElementById("order-items");
-    const totalDisplay = document.getElementById("order-total");
-    const deliveryInfo = document.getElementById("delivery-info");
-
-    let total = 0;
-    itemsList.innerHTML = "";
-
-    order.cart.forEach(item => {
-        let li = document.createElement("li");
-        li.textContent = item.name + " — Ksh " + item.price;
-        itemsList.appendChild(li);
-        total += item.price;
-    });
-
-    totalDisplay.textContent = "Total: Ksh " + total;
-
-    const delivery = order.delivery;
-    if (delivery) {
-        deliveryInfo.innerHTML = `
-            <strong>Name:</strong> ${delivery.name} <br>
-            <strong>Phone:</strong> ${delivery.phone} <br>
-            <strong>ID:</strong> ${delivery.idNumber} <br>
-            <strong>Location:</strong> ${delivery.address}
-        `;
-    }
-}
-
-window.onload = loadConfirmation;
-</script>
 {% endblock %}

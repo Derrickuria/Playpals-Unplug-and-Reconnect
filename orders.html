@@ -1,0 +1,215 @@
+{% extends "base.html" %}
+{% block content %}
+
+<section class="admin-dashboard">
+
+    <div class="dashboard-header">
+        <h2>📋 Orders</h2>
+        <a href="{{ url_for('admin_dashboard') }}" class="logout-btn" onclick="window.location.href=this.href; return false;">← Dashboard</a>
+    </div>
+
+    <!-- SEARCH & FILTER -->
+    <div class="admin-card">
+        <form method="GET" action="{{ url_for('admin_orders') }}" class="search-filter-form">
+            <input
+                type="text"
+                name="search"
+                placeholder="🔍 Search by customer name or phone..."
+                value="{{ search }}"
+                class="search-input"
+            >
+            <select name="status" class="filter-select">
+                <option value="">All Statuses</option>
+                <option value="Pending"   {% if status_filter == "Pending" %}selected{% endif %}>Pending</option>
+                <option value="Delivered" {% if status_filter == "Delivered" %}selected{% endif %}>Delivered</option>
+                <option value="Completed" {% if status_filter == "Completed" %}selected{% endif %}>Completed</option>
+            </select>
+            <button type="submit" class="action-btn edit">Filter</button>
+            <a href="{{ url_for('admin_orders') }}" class="action-btn">Clear</a>
+        </form>
+    </div>
+
+    <!-- RESULTS COUNT -->
+    <p class="results-count">
+        Showing <strong>{{ orders | length }}</strong> order{{ 's' if orders | length != 1 }}
+        {% if search %} matching "<strong>{{ search }}</strong>"{% endif %}
+        {% if status_filter %} with status <strong>{{ status_filter }}</strong>{% endif %}
+    </p>
+
+    <!-- ORDERS TABLE -->
+    <div class="admin-card">
+        {% if orders %}
+        <table class="admin-table">
+            <tr>
+                <th>#</th>
+                <th>Customer</th>
+                <th>Phone</th>
+                <th>Location</th>
+                <th>Games Ordered</th>
+                <th>Rental Period</th>
+                <th>Days</th>
+                <th>Total</th>
+                <th>Deposit</th>
+                <th>Balance</th>
+                <th>Status</th>
+                <th>Payment</th>
+                <th>Actions</th>
+            </tr>
+
+            {% for order in orders %}
+            <tr {% if order.overdue %}class="overdue-row"{% endif %}>
+                <td>{{ order.id }}</td>
+                <td>{{ order.customer_name }}</td>
+                <td>{{ order.phone }}</td>
+                <td class="location-cell">{{ order.location }}</td>
+
+                <td>
+                    <ul class="items-list">
+                        {% for item in order.parsed_items %}
+                            <li>{{ item.name }} <span class="item-price">(Ksh {{ item.price }}/day)</span></li>
+                        {% endfor %}
+                    </ul>
+                </td>
+
+                <td>
+                    {% if order.requested_start and order.requested_end %}
+                        {{ order.requested_start }} → {{ order.requested_end }}
+                    {% else %}
+                        <span style="opacity:0.5;">N/A</span>
+                    {% endif %}
+                </td>
+
+                <td>{{ order.rental_days }} day{{ 's' if order.rental_days != 1 }}</td>
+                <td>Ksh {{ order.total_price }}</td>
+                <td>Ksh {{ order.deposit_paid }}</td>
+                <td>Ksh {{ order.balance_due }}</td>
+
+                <td>
+                    {{ order.status }}
+                    {% if order.overdue %}
+                        <span class="overdue-badge">⚠ OVERDUE</span>
+                    {% endif %}
+                </td>
+
+                <td>{{ order.payment_status }}</td>
+
+                <td>
+                    {% if order.status == "Pending" %}
+                        <a href="{{ url_for('deliver_order', id=order.id) }}"
+                           class="action-btn deliver"
+                           target="_blank"
+                           onclick="if(confirm('Mark as delivered and generate receipt?')){setTimeout(()=>location.reload(),1500);return true;}return false;">
+                            🚚 Deliver
+                        </a>
+                    {% elif order.status == "Delivered" %}
+                        <a href="{{ url_for('return_order', id=order.id) }}"
+                           class="action-btn return"
+                           target="_blank"
+                           onclick="if(confirm('Mark as returned and collect balance?')){setTimeout(()=>location.reload(),1500);return true;}return false;">
+                            ✅ Return
+                        </a>
+                    {% else %}
+                        <span class="completed-badge">✔ Completed</span>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </table>
+
+        {% else %}
+        <p style="text-align:center; padding: 40px; opacity:0.6;">
+            No orders found{% if search or status_filter %} for this search{% endif %}.
+        </p>
+        {% endif %}
+    </div>
+
+    <!-- EXPORT -->
+    <div style="margin-top: 16px;">
+        <a href="{{ url_for('export_orders') }}" class="nav-btn export-btn-nav" style="display:inline-block; padding:12px 24px; border-radius:10px; background:linear-gradient(135deg,#f97316,#c2410c); color:white; font-weight:700; text-decoration:none;">
+            📥 Export to Excel
+        </a>
+    </div>
+
+</section>
+
+<style>
+.search-filter-form {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    align-items: center;
+}
+
+.search-input {
+    flex: 2;
+    min-width: 220px;
+    padding: 10px 16px;
+    border-radius: 8px;
+    border: 1px solid #3e3e5e;
+    background: #12121f;
+    color: #fff;
+    font-size: 14px;
+}
+
+.filter-select {
+    flex: 1;
+    min-width: 160px;
+    padding: 10px 16px;
+    border-radius: 8px;
+    border: 1px solid #3e3e5e;
+    background: #12121f;
+    color: #fff;
+    font-size: 14px;
+}
+
+.results-count {
+    margin-bottom: 12px;
+    font-size: 14px;
+    opacity: 0.8;
+    padding: 0 4px;
+}
+
+.overdue-row {
+    background: rgba(220, 38, 38, 0.08) !important;
+    border-left: 4px solid #dc2626;
+}
+
+.overdue-badge {
+    display: inline-block;
+    background: #dc2626;
+    color: white;
+    font-size: 10px;
+    font-weight: 700;
+    padding: 2px 7px;
+    border-radius: 4px;
+    margin-left: 6px;
+    vertical-align: middle;
+}
+
+.completed-badge {
+    color: #22c55e;
+    font-weight: 700;
+}
+
+.items-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    font-size: 13px;
+}
+
+.items-list li { padding: 2px 0; }
+
+.item-price {
+    opacity: 0.6;
+    font-size: 11px;
+}
+
+.location-cell {
+    max-width: 160px;
+    font-size: 12px;
+    word-break: break-word;
+}
+</style>
+
+{% endblock %}

@@ -16,6 +16,15 @@
             <label>ID Number</label>
             <input type="text" id="idNumber" required placeholder="National ID">
 
+            <!-- RENTAL DURATION -->
+            <label>Rental Start Date</label>
+            <input type="date" id="rentalStart" required>
+
+            <label>Rental End Date</label>
+            <input type="date" id="rentalEnd" required>
+
+            <p id="duration-display" class="duration-info"></p>
+
             <label>Delivery Location</label>
             <p class="map-instruction">
                 🔍 Search for your location OR click on the map to drop a pin where you want the games delivered.
@@ -32,10 +41,8 @@
 
 <!-- Leaflet CSS -->
 <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
-
 <!-- Leaflet JS -->
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
-
 <!-- Leaflet Geocoder Plugin -->
 <link rel="stylesheet" href="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.css" />
 <script src="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.js"></script>
@@ -46,71 +53,109 @@ let selectedLng = null;
 let selectedAddress = "";
 let marker;
 
-// Initialize map
+// Set minimum date to today
+const today = new Date().toISOString().split("T")[0];
+document.getElementById("rentalStart").min = today;
+document.getElementById("rentalEnd").min = today;
+
+// When start date changes, end date must be at least the same day
+document.getElementById("rentalStart").addEventListener("change", function () {
+    document.getElementById("rentalEnd").min = this.value;
+    updateDurationDisplay();
+});
+
+document.getElementById("rentalEnd").addEventListener("change", updateDurationDisplay);
+
+function updateDurationDisplay() {
+    const start = document.getElementById("rentalStart").value;
+    const end = document.getElementById("rentalEnd").value;
+    const display = document.getElementById("duration-display");
+
+    if (start && end) {
+        const startDate = new Date(start);
+        const endDate = new Date(end);
+        const days = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24)) + 1;
+
+        if (days < 1) {
+            display.innerText = "⚠️ End date must be on or after start date.";
+            display.style.color = "red";
+        } else {
+            display.innerText = `📅 Rental Duration: ${days} day${days > 1 ? "s" : ""}`;
+            display.style.color = "#f5c542";
+        }
+    }
+}
+
+// Initialize map centered on Nairobi
 const map = L.map('map').setView([-1.286389, 36.817223], 13);
 
-// Map tiles
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     attribution: '&copy; OpenStreetMap contributors'
 }).addTo(map);
 
-// Search control
-L.Control.geocoder({
-    defaultMarkGeocode: false
-})
+L.Control.geocoder({ defaultMarkGeocode: false })
 .on('markgeocode', function(e) {
     const center = e.geocode.center;
     map.setView(center, 16);
-
     if (marker) map.removeLayer(marker);
     marker = L.marker(center).addTo(map);
-
     selectedLat = center.lat;
     selectedLng = center.lng;
     selectedAddress = e.geocode.name || e.geocode.html || "";
-
     updateLocationStatus();
 })
 .addTo(map);
 
-// Click-to-pin fallback
 map.on('click', function(e) {
     selectedLat = e.latlng.lat;
     selectedLng = e.latlng.lng;
-
     if (marker) map.removeLayer(marker);
     marker = L.marker([selectedLat, selectedLng]).addTo(map);
 
-    // Reverse geocode to get human-readable address
     fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${selectedLat}&lon=${selectedLng}`)
         .then(res => res.json())
         .then(data => {
             selectedAddress = data.display_name || "";
             updateLocationStatus();
         })
-        .catch(err => {
+        .catch(() => {
             selectedAddress = "";
             updateLocationStatus();
         });
 });
 
-// Update location text for user
 function updateLocationStatus() {
+    const el = document.getElementById("location-status");
     if (selectedAddress)
-        document.getElementById("location-status").innerText = "📍 Location Selected: " + selectedAddress;
+        el.innerText = "📍 Location Selected: " + selectedAddress;
     else if (selectedLat && selectedLng)
-        document.getElementById("location-status").innerText =
-            "📍 Coordinates Selected: (" + selectedLat.toFixed(5) + ", " + selectedLng.toFixed(5) + ")";
+        el.innerText = "📍 Coordinates: (" + selectedLat.toFixed(5) + ", " + selectedLng.toFixed(5) + ")";
     else
-        document.getElementById("location-status").innerText = "No location selected yet";
+        el.innerText = "No location selected yet";
 }
 
-// Save delivery details + address to localStorage
 function saveDeliveryDetails(event) {
     event.preventDefault();
 
     if (!selectedLat || !selectedLng || !selectedAddress) {
         alert("Please search or click on the map to select a delivery location.");
+        return;
+    }
+
+    const start = document.getElementById("rentalStart").value;
+    const end = document.getElementById("rentalEnd").value;
+
+    if (!start || !end) {
+        alert("Please select rental start and end dates.");
+        return;
+    }
+
+    const startDate = new Date(start);
+    const endDate = new Date(end);
+    const days = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24)) + 1;
+
+    if (days < 1) {
+        alert("End date must be on or after start date.");
         return;
     }
 
@@ -120,11 +165,13 @@ function saveDeliveryDetails(event) {
         idNumber: document.getElementById("idNumber").value,
         latitude: selectedLat,
         longitude: selectedLng,
-        address: selectedAddress
+        address: selectedAddress,
+        rentalStart: start,
+        rentalEnd: end,
+        rentalDays: days
     };
 
     localStorage.setItem("deliveryDetails", JSON.stringify(deliveryDetails));
-
     window.location.href = "/payment";
 }
 </script>

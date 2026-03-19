@@ -10,7 +10,9 @@
         <div class="order-summary">
             <h3>Order Summary</h3>
             <ul id="order-items"></ul>
+            <p id="rental-duration-info" style="color:#f5c542; font-weight:600;"></p>
             <p class="total" id="order-total">Total: Ksh 0</p>
+            <p id="deposit-info" style="font-size:14px; opacity:0.8;"></p>
         </div>
 
         <!-- DELIVERY SUMMARY -->
@@ -20,37 +22,88 @@
         </div>
 
         <!-- PAYMENT FORM -->
-        <form class="payment-form" onsubmit="processPayment(event)">
-            <label>M-Pesa Phone Number</label>
-            <input type="tel" id="mpesa-phone" placeholder="07XXXXXXXX" required>
-            <button type="submit" class="pay-btn">Pay Now</button>
-        </form>
+        <div class="payment-form-wrapper">
+            <form class="payment-form" onsubmit="processPayment(event)">
+                <label>M-Pesa Phone Number</label>
+                <input type="tel" id="mpesa-phone" placeholder="07XXXXXXXX" required>
+                <button type="submit" class="pay-btn" id="pay-btn">
+                    💚 Pay Deposit via M-Pesa
+                </button>
+            </form>
 
-        <p class="secure-note">🔒 Your payment is securely processed via M-Pesa</p>
+            <!-- STATUS BOX -->
+            <div id="payment-status-box" style="display:none;">
+                <div id="status-icon">⏳</div>
+                <p id="status-message">Sending STK Push to your phone...</p>
+                <p id="status-sub" style="font-size:13px; opacity:0.7;">
+                    Check your phone and enter your M-Pesa PIN
+                </p>
+            </div>
+        </div>
 
+        <p class="secure-note">🔒 You are paying a 50% deposit now. Balance is due on return.</p>
     </div>
 </section>
 
+<style>
+#payment-status-box {
+    text-align: center;
+    padding: 24px;
+    background: #1e1e2e;
+    border-radius: 12px;
+    margin-top: 16px;
+    border: 1px solid #2e2e4e;
+}
+
+#status-icon {
+    font-size: 40px;
+    margin-bottom: 12px;
+}
+
+#status-message {
+    font-size: 16px;
+    font-weight: 600;
+    margin-bottom: 6px;
+}
+
+.pay-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+</style>
+
 <script>
+let orderData = {};
+let pollInterval = null;
+
 function loadOrderSummary() {
     let cart = JSON.parse(localStorage.getItem("cart")) || [];
     let delivery = JSON.parse(localStorage.getItem("deliveryDetails")) || {};
 
     const itemsList = document.getElementById("order-items");
     const totalDisplay = document.getElementById("order-total");
+    const depositInfo = document.getElementById("deposit-info");
     const deliveryInfo = document.getElementById("delivery-info");
+    const durationInfo = document.getElementById("rental-duration-info");
 
-    let total = 0;
+    const days = delivery.rentalDays || 1;
+    let baseTotal = 0;
     itemsList.innerHTML = "";
 
     cart.forEach(item => {
+        const itemTotal = item.price * days;
+        baseTotal += itemTotal;
         let li = document.createElement("li");
-        li.textContent = item.name + " — Ksh " + item.price;
+        li.textContent = `${item.name} — Ksh ${item.price} × ${days} day${days > 1 ? "s" : ""} = Ksh ${itemTotal}`;
         itemsList.appendChild(li);
-        total += item.price;
     });
 
-    totalDisplay.textContent = "Total: Ksh " + total;
+    const deposit = Math.ceil(baseTotal * 0.5);
+    const balance = baseTotal - deposit;
+
+    durationInfo.textContent = `📅 Rental: ${delivery.rentalStart} → ${delivery.rentalEnd} (${days} day${days > 1 ? "s" : ""})`;
+    totalDisplay.textContent = `Total: Ksh ${baseTotal}`;
+    depositInfo.textContent = `Deposit (50%): Ksh ${deposit} — Balance on return: Ksh ${balance}`;
 
     if (delivery.name) {
         deliveryInfo.innerHTML = `
@@ -61,19 +114,70 @@ function loadOrderSummary() {
         `;
     }
 
-    return { total, delivery, items: cart };
+    orderData = { total: baseTotal, deposit, balance, delivery, items: cart, days };
+}
+
+function setStatus(icon, message, sub = "") {
+    document.getElementById("status-icon").textContent = icon;
+    document.getElementById("status-message").textContent = message;
+    document.getElementById("status-sub").textContent = sub;
+    document.getElementById("payment-status-box").style.display = "block";
+}
+
+function pollPaymentStatus(orderId) {
+    let attempts = 0;
+    const maxAttempts = 24; // poll for ~2 minutes
+
+    pollInterval = setInterval(async () => {
+        attempts++;
+        try {
+            const res = await fetch(`/check_payment/${orderId}`);
+            const data = await res.json();
+
+            if (data.payment_status === "Deposit Paid") {
+                clearInterval(pollInterval);
+                setStatus("✅", "Payment confirmed!", `M-Pesa Receipt: ${data.mpesa_receipt || "N/A"}`);
+                localStorage.removeItem("cart");
+                localStorage.removeItem("deliveryDetails");
+                setTimeout(() => {
+                    window.location.href = "/orderConfirmation/" + orderId;
+                }, 2000);
+
+            } else if (data.payment_status === "Payment Failed") {
+                clearInterval(pollInterval);
+                setStatus("❌", "Payment was cancelled or failed.", "You can try again below.");
+                document.getElementById("pay-btn").disabled = false;
+
+            } else if (attempts >= maxAttempts) {
+                clearInterval(pollInterval);
+                setStatus("⏰", "Payment timed out.", "If you paid, your order is still saved. Contact us to confirm.");
+                localStorage.removeItem("cart");
+                localStorage.removeItem("deliveryDetails");
+                setTimeout(() => {
+                    window.location.href = "/orderConfirmation/" + orderId;
+                }, 3000);
+            }
+        } catch (e) {
+            console.error("Polling error:", e);
+        }
+    }, 5000); // poll every 5 seconds
 }
 
 async function processPayment(event) {
     event.preventDefault();
 
-    const phone = document.getElementById("mpesa-phone").value;
+    const phone = document.getElementById("mpesa-phone").value.trim();
     if (!phone.startsWith("07") || phone.length < 10) {
-        alert("Enter a valid M-Pesa phone number.");
+        alert("Enter a valid M-Pesa phone number e.g 07XXXXXXXX.");
         return;
     }
 
-    const { total, delivery, items } = loadOrderSummary();
+    const btn = document.getElementById("pay-btn");
+    btn.disabled = true;
+    btn.textContent = "Processing...";
+    setStatus("⏳", "Sending STK Push to your phone...", "Check your phone and enter your M-Pesa PIN");
+
+    const { total, delivery, items, days } = orderData;
 
     try {
         const response = await fetch("/save_order", {
@@ -82,28 +186,41 @@ async function processPayment(event) {
             body: JSON.stringify({
                 name: delivery.name,
                 phone: delivery.phone,
+                mpesa_phone: phone,
                 address: delivery.address,
                 total: total,
-                items: items
+                items: items,
+                rental_start: delivery.rentalStart,
+                rental_end: delivery.rentalEnd,
+                rental_days: days
             })
         });
 
         const data = await response.json();
 
         if (data.error) {
-            alert("Something went wrong saving your order: " + data.error);
+            setStatus("❌", "Something went wrong.", data.error);
+            btn.disabled = false;
+            btn.textContent = "💚 Pay Deposit via M-Pesa";
             return;
         }
 
-        // Clear cart
-        localStorage.removeItem("cart");
-        localStorage.removeItem("deliveryDetails");
+        if (data.stk_error) {
+            // STK failed but order was saved
+            setStatus("⚠️", "M-Pesa prompt failed.", data.stk_error);
+            btn.disabled = false;
+            btn.textContent = "💚 Try Again";
+            return;
+        }
 
-        // Redirect to confirmation page
-        window.location.href = "/orderConfirmation/" + data.order_id;
+        // STK sent — start polling
+        setStatus("⏳", "M-Pesa prompt sent! 📲", "Enter your PIN on your phone to complete payment.");
+        pollPaymentStatus(data.order_id);
 
     } catch (error) {
-        alert("Something went wrong saving your order. Please try again.");
+        setStatus("❌", "Network error. Please try again.", "");
+        btn.disabled = false;
+        btn.textContent = "💚 Pay Deposit via M-Pesa";
         console.error(error);
     }
 }

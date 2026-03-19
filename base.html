@@ -12,18 +12,25 @@
     <div class="logo">PlayPals</div>
     <ul class="nav-links">
         <li><a href="{{ url_for('home') }}">Home</a></li>
-        <li><a href="{{ url_for('catalogue') }}">Games</a></li>
-        
     </ul>
 </nav>
 
+<!-- FLASH MESSAGES -->
+{% with messages = get_flashed_messages() %}
+    {% if messages %}
+        <div class="flash-messages">
+            {% for message in messages %}
+                <div class="flash-alert">{{ message }}</div>
+            {% endfor %}
+        </div>
+    {% endif %}
+{% endwith %}
+
 {% block content %}{% endblock %}
 
-<!--Admin Access Button-->
+<!-- Admin Access Button -->
 <a href="{{ url_for('admin_login') }}" class="admin-float-btn" title="Admin Access">⚙ Admin</a>
 
 <script src="{{ url_for('static', filename='js/main.js') }}"></script>
 </body>
 </html>
-
-
